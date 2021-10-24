@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+
+    <style>
+      #gallery {
+        margin-top: 10px;
+      }
+      #gallery canvas {
+        width: auto;
+        vertical-align: middle;
+      }
+      .button {
+        display: inline-block;
+        vertical-align: middle;
+        background: #ccc;
+        cursor: pointer;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+      .button:hover {
+        background: #ddd;
+      }
+      #fileElem {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <form>
+        <div class="block">
+          <input type="file" id="fileElem" onchange="handleFiles(this.files)" accept="application/pdf">
+          <label class="button" for="fileElem">Upload Files</label>
+        </div>
+
+        <div id="gallery"></div>
+      </form>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.2.228/pdf.min.js"></script>
+
+    <script>
+      function handleFiles(files) {
+        document.getElementById('gallery').innerHTML = '';
+        files = [...files];
+
+        working_file = files[0];
+
+        if(['application/pdf'].indexOf(working_file.type) == -1) {
+          alert('Error : Not a PDF');
+          return;
+        }
+
+        previewFile(working_file);
+
+        files = [];
+        _currPage = 1;
+      }
+
+      var _pdf;
+      var _currPage = 1;
+      var _numPages = 0;
+      
+      function previewFile(file) {
+        let pdf_url = URL.createObjectURL(file);
+        pdfjsLib.getDocument({ url: pdf_url }).then(function(pdf_doc) {
+          _pdf = pdf_doc;
+          _numPages = pdf_doc.numPages;
+          _pdf.getPage(1).then(handlePages);
+        }).catch(function(error) {
+          alert(error.message);
+        });
+      }
+
+      function handlePages(page) {
+        //This gives us the page's dimensions at full scale
+        var viewport = page.getViewport(1);
+
+        //We'll create a canvas for each page to draw it on
+        var canvas = document.createElement("canvas");
+        canvas.style.display = "block";
+        var context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        //Draw it on the canvas
+        page.render({canvasContext: context, viewport: viewport});
+
+        //Add it to the web page
+        document.getElementById('gallery').appendChild(canvas)
+        document.getElementById('gallery').appendChild(document.createElement('br'))
+
+        //Move to next page
+        _currPage++;
+        if (_currPage <= _numPages)
+        {
+          _pdf.getPage(_currPage).then(handlePages);
+        }
+      }
+    </script>
+  </body>
+</html>
